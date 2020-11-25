@@ -1,0 +1,49 @@
+﻿@page "/"
+
+@inject NavigationManager navigationManager
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Tag</th>
+            <th>Count</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var tag in Tags)
+        {
+            <tr>
+                <th>@tag.Name</th>
+                <th>@tag.Count</th>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code
+{
+    List<Tag> Tags { get; set; } = new List<Tag>();
+
+    private HubConnection _hubConnection;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        string baseUri = navigationManager.BaseUri;
+        string hubUrl = baseUri.TrimEnd('/') + StackOverflowTagsHub.HubUrl;
+        _hubConnection = new HubConnectionBuilder()
+            .WithUrl(hubUrl)
+            .Build();
+
+        _hubConnection.On<List<Tag>>("NewTags", HandleTags);
+
+        await _hubConnection.StartAsync();
+    }
+
+    private void HandleTags(List<Tag> tags)
+    {
+        Tags = tags;
+        StateHasChanged();
+    }
+}
